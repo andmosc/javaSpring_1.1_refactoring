@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class ThreadServer implements Runnable {
-    final List<String> validPaths;
+    private final List<String> validPaths;
     private final Socket socket;
 
     public ThreadServer(Socket socket) {
