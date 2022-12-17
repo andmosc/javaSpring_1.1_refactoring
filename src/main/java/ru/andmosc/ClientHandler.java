@@ -13,13 +13,12 @@ import java.util.List;
 import java.util.Map;
 
 public class ClientHandler implements Runnable {
-    private final List<String> validPaths;
+    private final static List<String> validPaths = List.of("/index.html", "/spring.svg", "/spring.png"
+            , "/resources.html", "/styles.css", "/app.js", "/links.html", "/forms.html"
+            , "/classic.html", "/events.html", "/events.js");
     private final Socket socket;
 
     public ClientHandler(Socket socket) {
-        validPaths = List.of("/index.html", "/spring.svg", "/spring.png"
-                , "/resources.html", "/styles.css", "/app.js", "/links.html", "/forms.html"
-                , "/classic.html", "/events.html", "/events.js");
         this.socket = socket;
     }
 
@@ -30,19 +29,20 @@ public class ClientHandler implements Runnable {
                 final BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 final BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream())
         ) {
-
             Request request = createRequest(in, out);
-
-
-
-            //response(out, path);
-
+            Handler handler = Server.getHandlers().get(request.getMethod()).get(request.getPath());
+            if (handler == null) {
+                out.write(errResponse().getBytes());
+                out.flush();
+            } else {
+                handler.handle(request, out);
+            }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
 
-    private Request createRequest(BufferedReader in, BufferedOutputStream out) throws IOException{
+    private Request createRequest(BufferedReader in, BufferedOutputStream out) throws IOException {
 
         final String requestLine = in.readLine();
         final String[] parts = requestLine.split(" ");
@@ -59,23 +59,22 @@ public class ClientHandler implements Runnable {
         }
 
         String line;
-        Map<String,String> headers = new HashMap<>();
-        while(!(line = in.readLine()).equals("")) {
+        Map<String, String> headers = new HashMap<>();
+        while (!(line = in.readLine()).equals("")) {
             int indexOf = line.indexOf(":");
-            String name = line.substring(0,indexOf);
+            String name = line.substring(0, indexOf);
             String value = line.substring(indexOf + 2);
-            headers.put(name,value);
+            headers.put(name, value);
         }
 
-        return new Request(method,path,headers,socket.getInputStream());
+        return new Request(method, path, headers, socket.getInputStream());
     }
 
-    private static void response(BufferedOutputStream out, String path) throws IOException {
-        final Path filePath = Path.of(".", "public", path);
+    public static void responseServer(Request request, BufferedOutputStream out) throws IOException {
+        final Path filePath = Path.of(".", "public", request.getPath());
         final String mimeType = Files.probeContentType(filePath);
 
-        // special case for classic
-        if (path.equals("/classic.html")) {
+        if (request.getPath().equals("/classic.html")) {
             classicResponse(out, filePath, mimeType);
             return;
         }
@@ -112,7 +111,7 @@ public class ClientHandler implements Runnable {
                 "\r\n";
     }
 
-    public List<String> getValidPaths() {
+    public static List<String> getValidPaths() {
         return validPaths;
     }
 }
