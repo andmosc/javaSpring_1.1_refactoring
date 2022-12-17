@@ -8,15 +8,13 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class ClientHandler implements Runnable {
+public class ThreadServer implements Runnable {
     private final List<String> validPaths;
     private final Socket socket;
 
-    public ClientHandler(Socket socket) {
+    public ThreadServer(Socket socket) {
         validPaths = List.of("/index.html", "/spring.svg", "/spring.png"
                 , "/resources.html", "/styles.css", "/app.js", "/links.html", "/forms.html"
                 , "/classic.html", "/events.html", "/events.js");
@@ -30,44 +28,28 @@ public class ClientHandler implements Runnable {
                 final BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 final BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream())
         ) {
+            // read only request line for simplicity
+            // must be in form GET /path HTTP/1.1
+            final String requestLine = in.readLine();
+            final String[] parts = requestLine.split(" ");
 
-            Request request = createRequest(in, out);
+                if (parts.length != 3) {
+                    return;
+                }
 
+                final String path = parts[1];
 
+                if (!validPaths.contains(path)) {
+                    out.write(errResponse().getBytes());
+                    out.flush();
+                    return;
+                }
 
-            //response(out, path);
+            response(out, path);
 
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-    }
-
-    private Request createRequest(BufferedReader in, BufferedOutputStream out) throws IOException{
-
-        final String requestLine = in.readLine();
-        final String[] parts = requestLine.split(" ");
-
-        if (parts.length != 3) {
-            socket.close();
-        }
-        final String method = parts[0];
-        final String path = parts[1];
-
-        if (!validPaths.contains(path)) {
-            out.write(errResponse().getBytes());
-            out.flush();
-        }
-
-        String line;
-        Map<String,String> headers = new HashMap<>();
-        while(!(line = in.readLine()).equals("")) {
-            int indexOf = line.indexOf(":");
-            String name = line.substring(0,indexOf);
-            String value = line.substring(indexOf + 2);
-            headers.put(name,value);
-        }
-
-        return new Request(method,path,headers,socket.getInputStream());
     }
 
     private static void response(BufferedOutputStream out, String path) throws IOException {
@@ -110,9 +92,5 @@ public class ClientHandler implements Runnable {
                 "Content-Length: " + length + "\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-    }
-
-    public List<String> getValidPaths() {
-        return validPaths;
     }
 }
