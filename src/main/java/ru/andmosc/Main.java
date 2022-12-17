@@ -1,6 +1,6 @@
 package ru.andmosc;
 
-import java.io.IOException;
+import java.io.BufferedOutputStream;
 
 public class Main {
 
@@ -10,25 +10,19 @@ public class Main {
     public static void main(String[] args) {
 
         final Server server = new Server(PORT, SIZE_POOL);
-
-        for (String validPath : ClientHandler.getValidPaths()) {
-            server.addHandler("GET", validPath, (request, out) -> {
-                try {
-                    ClientHandler.responseServer(request,out);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-
-        server.addHandler("POST", "/resources.html", (request, out) -> {
-            try {
-                ClientHandler.responseServer(request,out);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+/*
+        // добавление handler'ов (обработчиков)
+        server.addHandler("GET", "/messages", new Handler() {
+            public void handle(Request request, BufferedOutputStream responseStream) {
+                // TODO: handlers code
             }
         });
-
+        server.addHandler("POST", "/messages", new Handler() {
+            public void handle(Request request, BufferedOutputStream responseStream) {
+                // TODO: handlers code
+            }
+        });
+*/
         server.listen();
     }
 
