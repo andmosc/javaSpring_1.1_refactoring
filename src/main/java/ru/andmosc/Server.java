@@ -14,14 +14,15 @@ public class Server {
     public Server(int PORT, int poolSize) {
         this.PORT = PORT;
         threadPool = Executors.newFixedThreadPool(poolSize);
+        startServer();
     }
 
-    public void listen() {
+    private void startServer() {
         try (final ServerSocket serverSocket = new ServerSocket(PORT)) {
             while (true) {
                 final Socket socket = serverSocket.accept();
-                ClientHandler clientHandler = new ClientHandler(socket);
-                threadPool.execute(clientHandler);
+                ThreadServer threadServer = new ThreadServer(socket);
+                threadPool.execute(threadServer);
             }
         } catch (IOException e) {
             try {
@@ -32,9 +33,5 @@ public class Server {
                 threadPool.shutdownNow();
             }
         }
-    }
-
-    public void addHandler(String method, String path, Handler handler) {
-
     }
 }
