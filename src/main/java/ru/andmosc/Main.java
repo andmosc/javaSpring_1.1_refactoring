@@ -21,7 +21,7 @@ public class Main {
             });
         }
 
-        server.addHandler("POST", "/resources.html", (request, out) -> {
+        server.addHandler("POST", "/index.html", (request, out) -> {
             try {
                 ClientHandler.responseServer(request,out);
             } catch (IOException e) {
