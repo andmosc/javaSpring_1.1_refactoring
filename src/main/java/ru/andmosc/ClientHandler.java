@@ -109,10 +109,10 @@ public class ClientHandler implements Runnable {
         String body = null;
         if (method.equals(POST)) {
             in.skip(headersDelimeter.length);
-            final Optional<String> contentLenght = extractHeaders(headers, "Content-Lenght");
-            if (contentLenght.isPresent()) {
-                final int lenght = Integer.parseInt(contentLenght.get());
-                final byte[] bodyBytes = in.readNBytes(lenght);
+            final Optional<String> contentLength = extractHeaders(headers, "Content-Length");
+            if (contentLength.isPresent()) {
+                final int length = Integer.parseInt(contentLength.get());
+                final byte[] bodyBytes = in.readNBytes(length);
                 body = new String(bodyBytes);
                 System.out.println(body);
             }
