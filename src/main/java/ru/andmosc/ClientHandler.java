@@ -2,7 +2,6 @@ package ru.andmosc;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
-
 import java.io.*;
 import java.net.Socket;
 import java.net.URI;
@@ -19,6 +18,7 @@ public class ClientHandler implements Runnable {
             , "/classic.html", "/events.html", "/events.js");
     public static final String GET = "GET";
     public static final String POST = "POST";
+    public static final String CONTENT_TYPE_APPLICATION = "application/x-www-form-urlencoded";
     private final Socket socket;
     private final static List<String> allowedMethods = List.of("GET", "POST");
 
@@ -34,18 +34,34 @@ public class ClientHandler implements Runnable {
                 final BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream())
         ) {
             Request request = createRequest(in, out);
+
+            String contentType = extractHeaders(request.getHeaders(), "Content-Type").isPresent() ?
+                    extractHeaders(request.getHeaders(), "Content-Type").get() : null;
+
+            if (contentType.equals(CONTENT_TYPE_APPLICATION)) {
+
+                if (request.getQueryParams() != null) {
+                    System.out.println("queryString");
+                    System.out.println("value = " + request.getQueryParam("value"));
+                }
+
+                if (request.getPostParams() != null) {
+                    System.out.println("PostParam");
+                    System.out.println("value = " + request.getPostParam("value"));
+                    System.out.println("title = " + request.getPostParam("title"));
+                }
+            }
+
             Handler handler = Server.getHandlers().get(request.getMethod()).get(request.getPath());
-            
+
             if (handler == null) {
                 out.write(errResponse().getBytes());
                 out.flush();
             } else {
                 handler.handle(request, out);
             }
-        } catch (IOException ex) {
+        } catch (IOException | URISyntaxException ex) {
             throw new RuntimeException(ex);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -106,15 +122,14 @@ public class ClientHandler implements Runnable {
         System.out.println(headers);
 
 //for POST
-        String body = null;
+        List<NameValuePair> body = null;
         if (method.equals(POST)) {
             in.skip(headersDelimeter.length);
-            final Optional<String> contentLenght = extractHeaders(headers, "Content-Lenght");
-            if (contentLenght.isPresent()) {
-                final int lenght = Integer.parseInt(contentLenght.get());
-                final byte[] bodyBytes = in.readNBytes(lenght);
-                body = new String(bodyBytes);
-                System.out.println(body);
+            final Optional<String> contentLength = extractHeaders(headers, "Content-Length");
+            if (contentLength.isPresent()) {
+                final int length = Integer.parseInt(contentLength.get());
+                final byte[] bodyBytes = in.readNBytes(length);
+                 body = URLEncodedUtils.parse(new String(bodyBytes), StandardCharsets.UTF_8);
             }
         }
 

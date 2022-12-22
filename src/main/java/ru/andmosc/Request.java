@@ -9,12 +9,12 @@ public class Request {
     private final String path;
     private final String versionalHTTP;
     private final List<String> headers;
-    private final String body;
+    private final List<NameValuePair> body;
     private final List<NameValuePair> queryString;
 
     public Request(
             String method, String path, List<NameValuePair> queryString,
-            String versionalHTTP, List<String> headers, String body) {
+            String versionalHTTP, List<String> headers, List<NameValuePair> body) {
         this.method = method;
         this.path = path;
         this.queryString = queryString;
@@ -31,6 +31,20 @@ public class Request {
 
     public List<NameValuePair> getQueryParams() {
         return queryString;
+    }
+
+    public List<String> getHeaders() {
+        return headers;
+    }
+
+    public String getPostParam(String name) {
+        return body.stream().filter(item -> item.getName()
+                        .equals(name)).map(NameValuePair::getValue)
+                .collect(Collectors.joining("&"));
+    }
+
+    public List<NameValuePair> getPostParams() {
+        return body;
     }
 
     public String getMethod() {
